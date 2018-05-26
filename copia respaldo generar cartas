@@ -1,0 +1,45 @@
+
+parsearArgs(Resto,X,Y,Z):-
+  nth0(0,Resto,X),
+  nth0(1,Resto,Y),
+  nth0(2,Resto,Z).
+pasarAASCII([],[]).
+pasarAASCII([CCadena|RCadena],[CCadena|L]):-
+  pasarAASCII(RCadena,L).
+
+generarCartasAux([],[]).
+generarCartasAux([N,P|Resto],[c(Numero,Palo)])
+
+
+generarCartas([],[]).
+generarCartas([CArg|RArg],[CCartas|RCartas]):-
+  string_to_card(CArg,CCartas),
+  generarCartas(RArg,RCartas).
+generarCartas
+generarCartas([CCadenaEntrada|RCadenaEntrada],[CCartas|RCartas]):-
+  pasarAASCII(CCadenaEntrada,ListaASCII),
+  borro_elem_lista(44,ListaASCII,ListaSinComas),
+  generarCartasAux(ListaSinComas,ListaCartas),
+  format('~w\n',ListaSinComas), 
+  string_to_card(CArg,CCartas),
+  generarCartas(RArg,RCartas).
+
+formarListas(Argumentos,ManoJugador,ManoCrupier,CartasVistas):-
+  parsearArgs(Argumentos,MJ,MC,CV),
+  generarCartas([MJ],ManoJugador),
+  generarCartas([MC],ManoCrupier),
+  generarCartas([CV],CartasVistas).
+
+verificarJugador([crupier | Resto]):-
+  formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
+  format('Mano Crupier: ~w\n',ManoCrupier),
+  format('Otras cartas\n~w\n',ManoJugador),
+  format('~w\n',CartasVistas),
+  playCrupier(ManoCrupier).
+
+verificarJugador([jugador | Resto]):-
+  format('llame a formar listas\n'),
+  formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
+  format('Listas formadas: \n'),
+  format('Mano Jugador: ~w\n',ManoJugador),
+  format('Mano Crupier: ~w\n',ManoCrupier),
