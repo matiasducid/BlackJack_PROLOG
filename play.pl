@@ -1,6 +1,7 @@
 
 :- initialization main.
 main :-
+  formaaa('asd'),
   current_prolog_flag(argv,Argv),
   verificarJugador(Argv),
   halt.
@@ -22,9 +23,14 @@ pasarAASCII([CCadena|RCadena],[CCadenaListada|L]):-
   string_to_list(CCadena,CCadenaListada),
   pasarAASCII(RCadena,L).
 
+esUnDiez(49,48,10).
 generarCartasAux([],[]).
 generarCartasAux([N,P|Resto],[c(Numero,Palo)|RestoCartas]):-
   obtengoChar(N,Numero),
+  obtengoChar(P,Palo),
+  generarCartasAux(Resto,RestoCartas).
+generarCartasAux([N1,N2,P|Resto],[c(10,Palo)|RestoCartas]):-
+  esUnDiez(N1,N2,10),
   obtengoChar(P,Palo),
   generarCartasAux(Resto,RestoCartas).
 /*ARREGLAR EN GENERAR CARTAS:
@@ -32,28 +38,23 @@ SI MANDO MULTIPLES CARTAS Y UNA ES UN 10 PINCHA.*/
 generarCartas([],[]).
 generarCartas([CArg],[CCartas]):-
   string_to_card(CArg,CCartas).
-generarCartas([CCadenaEntrada|RCadenaEntrada],ListaCartas):-
+generarCartas([CCadenaEntrada],ListaCartas):-
   string_to_list(CCadenaEntrada,ListaASCII),
   borro_elem_lista(44,ListaASCII,ListaSinComas),
   generarCartasAux(ListaSinComas,ListaCartas).
-/*  generarCartas(RCadenaEntrada,RestoCartas).
-*/
+/*formarListas recibe una serie de argumentos y te devuelve la mano del jugador, del crupier y las cartas vistas en mesa*/
 formarListas(Argumentos,ManoJugador,ManoCrupier,CartasVistas):-
   parsearArgs(Argumentos,MJ,MC,CV),
   generarCartas([MJ],ManoJugador),
   generarCartas([MC],ManoCrupier),
   generarCartas([CV],CartasVistas).
-/*ARREGLAR EN VERIFICARJUGADOR:
-CUANDO ARMO LAS LISTAS DE CARTAS DEBO TENER LAS CARTAS NO EN FORMA DE LISTAS
-SINÓ, CUANDO LLAMO A LOS "MOSTRARDESICION" INTERPRETAN MAL, POR EJEMPLO
-EL DE BLACKJACK NO ANDA PORQUE TOMA TODA LA LISTA COMO UN UNICO ELEMENTO.*/
+/*verificarJugador verifica si el comando pedido es del crupier o del jugador, luego corre la regla correspondiente*/
 verificarJugador([crupier | Resto]):-
   formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
   format('Mano Crupier: ~w\n',ManoCrupier),
   format('Otras cartas\n~w\n',ManoJugador),
   format('~w\n',CartasVistas),
   playCrupier(ManoCrupier).
-
 verificarJugador([jugador | Resto]):-
   format('llame a formar listas\n'),
   formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
@@ -62,28 +63,25 @@ verificarJugador([jugador | Resto]):-
   format('Mano Crupier: ~w\n',ManoCrupier),
   format('Cartas Vistas: ~w\n',CartasVistas),
   playJugador(ManoJugador,ManoCrupier,CartasVistas).
-
+/*Regla que llama a la toma de desicion del crupier*/
 playCrupier(ManoCrupier):-
   mostrarDesicionCrupier(ManoCrupier).
 playJugador(ManoJugador,ManoCrupier,CartasVistas):-
   mostrarDesicionJugador(ManoJugador,ManoCrupier,CartasVistas).
-
-
   /*Convierte una cadena en número si es que la cadena contiene un nro */
 get_number_atom(S, A) :- atom_number(S, A), !.
 get_number_atom(S, S).
-
 /*transforma una cadena en su functor de carta correspondiente*/
 string_to_card(S, c(Numero,Palo)) :-
   string_to_list(S, [N, P]),
   obtengoChar(N,Numero),
   obtengoChar(P,Palo).
+  /*caso especial del 10*/
 string_to_card(S, c(Numero,Palo)):-
   string_to_list(S, [49,48,P]),
   obtengoChar(43,Numero),
   obtengoChar(P,Palo).
 
-  /*uso el + porque '10' no se permite .. representa un 10 */
 obtengoChar(43,'10').
 obtengoChar(44,',').
 obtengoChar(48,'0').
@@ -124,10 +122,8 @@ obtengoChar(119,'w').
 obtengoChar(120,'x').
 obtengoChar(121,'y').
 obtengoChar(122,'z').
-obtengoChar(_,'#').
-/*----------------------*/
 
-/*Valores posibles de las cartas*/
+/*Valores posibles de las cartas(se puede borrar, no se usa)*/
 valorCarta(2,2).
 valorCarta(3,3).
 valorCarta(4,4).
@@ -140,8 +136,8 @@ valorCarta(10,10).
 valorCarta(j,10).
 valorCarta(q,10).
 valorCarta(k,10).
-valorCarta(a,11).
 valorCarta(a,1).
+valorCarta(a,11).
 
 
 valorCaracter('2',2).
@@ -157,12 +153,13 @@ value(c(N,_),Valor):-
   member(N,['2','3','4','5','6','7','8','9']),
   valorCaracter(N,R),
   Valor is R.
-  /*value(carta(Numero,Palo),ValorRetorno) EL REAL VALUE VA SIN MEMBER, NO DEBERIA HACER FALTA
-  YA QUE DEBERIA SER UN NUMERO QUE RECIBA O UNA LETRA DARSE CUENTA.*/
+/*value(carta(Numero,Palo),ValorRetorno) EL REAL VALUE VA SIN MEMBER, NO DEBERIA HACER FALTA
+YA QUE DEBERIA SER UN NUMERO QUE RECIBA O UNA LETRA DARSE CUENTA.*/
 value(c(N,_),Valor):-
   member(N,[j,q,k,a]),
   valorCarta(N,Valor).
 value(c('10',_),10).
+value(c(10,_),10).
 /*Suma*/
 suma([], 0).
 suma([N| Resto], Suma):-
@@ -184,27 +181,28 @@ hand([CHand|Resto],TotalMano):-
   value(CHand,AuxTotal),
   hand(Resto,PreTotal),
   TotalMano is AuxTotal+PreTotal.
-		/*Verdadero si la mano da 21 exacto.*/
+/*Verdadero si la mano da 21 exacto.*/
 twentyone(Hand):-
   hand(Hand,X),
   21 is X.
-
-		/*Verdadero si la mano se pasa de 21.*/
+/*Verdadero si la mano se pasa de 21.*/
 over(Hand):-
   hand(Hand,X),
   21 < X.
-
-		/*Da la longitud de una lista*/
+/*Da la longitud de una lista*/
 longitud([], 0).
 longitud([_|Resto], L):- longitud(Resto, LResto), L is LResto + 1.
-
 		/*blackjack indica si la mano da 21 exacto solo con 2 cartas.*/
 blackjack(Hand):-
   longitud(Hand,CantidadCartas),
   CantidadCartas is 2,
   twentyone(Hand),
   writef('ATR rrope, la rompí, tengo BLACKJACK\n').
-		/*menorA17(Lista de cartas)devuelve verdadero si la mano es menor a 17*/
+/*mayora a 21, devuelve verdadero si te pasaste de 21*/
+mayorA21(Hand):-
+  hand(Hand,X),
+  21 < X,!.
+    /*menorA17(Lista de cartas)devuelve verdadero si la mano es menor a 17*/
 menorA17(Hand):-
   hand(Hand,X),
   17 > X.
@@ -232,69 +230,63 @@ mostrarDesicionCrupier(Hand):-
   pedirOtraCrupier(Hand),!,
   writef('Me planto soy el CRUPIER\n').
 mostrarDesicionCrupier(_):- writef('Pido otra carta soy el CRUPIER\n').
-		/*SECCION DEL JUGADOR*/
-		/*agregoACards(Lista de la mano, Lista de cartas que salieron)*/
+/*SECCION DEL JUGADOR*/
+/*agregoACards(Lista de la mano, Lista de cartas que salieron)*/
 agregoACards([],Cards,Cards).
 agregoACards(Hand,Cards,Aux):-
   concatenar(Hand,Cards,Aux).
-		/*Me dice CUANTO me falta para llegar a 21.*/
+/*Me dice CUANTO me falta para llegar a 21.*/
 calcularCuantoPara21([],21).
 calcularCuantoPara21(Hand,ValorFaltante):-
   hand(Hand,ValorMano),
   ValorFaltante is 21 - ValorMano.
-  /*NO ME CALCULA BIEN LA DIFERENCIA, NO HACE EL HAND CON EL PARAMETRO RECIBIDO*/
-		/*contar cuenta las ocurrencias de la carta que necesito o menores.*/
+/*contar cuenta las ocurrencias de la carta que necesito o menores.*/
 contar(_,[],0).
 contar(X,[X|L],C):- !,contar(X,L,C1), C is C1+1.
 contar(X,[Y|L],C):- Y < X, contar(X,L,C1),C is C1+1.
 contar(X,[_|L],C):- contar(X,L,C).
-		/* diferencia (L,K,M), el cual es válido si M es la diferencia de L y K*/
+/* diferencia (L,K,M), el cual es válido si M es la diferencia de L y K*/
 diferencia([],_,[]).
 diferencia([A|B],K,M):- member(A,K), diferencia(B,K,M).
 diferencia([A|B],K,[A|M]):- not(member(A,K)), diferencia(B,K,M).
-		/*Genero el Mazo de las cartas que quedan*/
+/*Genero el Mazo de las cartas que quedan*/
 generarMazo(Cards,Mazo):-
 	diferencia([c('a',p),c('2',p),c('3',p),c('4',p),c('5',p),c('6',p),c('7',p),c('8',p),c('9',p),c('10',p),c('j',p),c('q',p),c('k',p),
               c('a',c),c('2',c),c('3',c),c('4',c),c('5',c),c('6',c),c('7',c),c('8',c),c('9',c),c('10',c),c('j',c),c('q',c),c('k',c),
               c('a',d),c('2',d),c('3',d),c('4',d),c('5',d),c('6',d),c('7',d),c('8',d),c('9',d),c('10',d),c('j',d),c('q',d),c('k',d),
               c('a',t),c('2',t),c('3',t),c('4',t),c('5',t),c('6',t),c('7',t),c('8',t),c('9',t),c('10',t),c('j',t),c('q',t),c('k',t)],
               Cards,Mazo).
-		/*Cuantas probabilidades tengo*/
-
+/*Cuantas probabilidades tengo*/
 probabilidad(CantCartaNecesito,CantCartasMazo,Respuesta):-
   Respuesta is CantCartaNecesito/CantCartasMazo.
-
-		/*Obtengo una lista de numeros a partir de una lista de functores.*/
-
+/*Obtengo una lista de numeros a partir de una lista de functores.*/
 obtenerValores([],[]).
 obtenerValores([CMazo|RMazo],ListaTotal):-
   value(CMazo,V),
   enlistar(V,ListaAux),
   concatenar(ListaAux,[],ListaPreFinal),
   obtenerValoresAux(RMazo,ListaPreFinal,ListaTotal).
-
 obtenerValoresAux([],L,L):-!.
 obtenerValoresAux([CMazo|RMazo],ListaTotal,Z):-
   value(CMazo,X),
   enlistar(X,ListaSegunda),
   concatenar(ListaSegunda,ListaTotal,ListaAux),
   obtenerValoresAux(RMazo,ListaAux,Z).
-
-		/*Decide el JUGADOR si pedir otra o no.*/
+/*Decide el JUGADOR si pedir otra o no.*/
 pedirOtraJugador(Hand,Crupier,Cards):-
-	not(blackjack(Hand)),
+  not(mayorA21(Hand)),
+  not(blackjack(Hand)),
 	not(mayorA18(Hand)),
   agregoACards(Hand,Cards,CardsAumentada),
   agregoACards(Crupier,CardsAumentada,CardsFinal),
   generarMazo(CardsFinal,RestoDeMazo),
   calcularCuantoPara21(Hand,Faltante),
-  format('me falta ~w para llegar a 21\n',Faltante),
   obtenerValores(RestoDeMazo,ValoresEnMazo),
 	longitud(ValoresEnMazo,CantidadCartasEnMazo),
 	contar(Faltante,ValoresEnMazo,CantCartaQueNecesito),
 	probabilidad(CantCartaQueNecesito,CantidadCartasEnMazo,Probabilidad),
   Probabilidad > 0.4 .
-
+/*muestra la desicion tomada por el jugador(seguir pidiendo o plantarse)*/
 mostrarDesicionJugador(Hand,Crupier, Cards):-
 	pedirOtraJugador(Hand,Crupier,Cards), !,
 	writef('PIDO OTRA CARTA SOY EL JUGADOR \n').
