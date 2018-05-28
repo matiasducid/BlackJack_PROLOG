@@ -27,20 +27,17 @@ generarCartasAux([N,P|Resto],[c(Numero,Palo)|RestoCartas]):-
   obtengoChar(N,Numero),
   obtengoChar(P,Palo),
   generarCartasAux(Resto,RestoCartas).
-
 /*ARREGLAR EN GENERAR CARTAS:
 SI MANDO MULTIPLES CARTAS Y UNA ES UN 10 PINCHA.*/
 generarCartas([],[]).
-generarCartas([CArg|RArg],[CCartas|RCartas]):-
-  string_to_card(CArg,CCartas),
-  generarCartas(RArg,RCartas).
-generarCartas([],[]).
-generarCartas([CCadenaEntrada|RCadenaEntrada],[ListaCartas|RestoCartas]):-
+generarCartas([CArg],[CCartas]):-
+  string_to_card(CArg,CCartas).
+generarCartas([CCadenaEntrada|RCadenaEntrada],ListaCartas):-
   string_to_list(CCadenaEntrada,ListaASCII),
   borro_elem_lista(44,ListaASCII,ListaSinComas),
-  generarCartasAux(ListaSinComas,ListaCartas),
-  generarCartas(RCadenaEntrada,RestoCartas).
-
+  generarCartasAux(ListaSinComas,ListaCartas).
+/*  generarCartas(RCadenaEntrada,RestoCartas).
+*/
 formarListas(Argumentos,ManoJugador,ManoCrupier,CartasVistas):-
   parsearArgs(Argumentos,MJ,MC,CV),
   generarCartas([MJ],ManoJugador),
@@ -206,7 +203,7 @@ blackjack(Hand):-
   longitud(Hand,CantidadCartas),
   CantidadCartas is 2,
   twentyone(Hand),
-  writef('ATR rrope\n').
+  writef('ATR rrope, la rompí, tengo BLACKJACK\n').
 		/*menorA17(Lista de cartas)devuelve verdadero si la mano es menor a 17*/
 menorA17(Hand):-
   hand(Hand,X),
