@@ -1,7 +1,6 @@
 
 :- initialization main.
 main :-
-  formaaa('asd'),
   current_prolog_flag(argv,Argv),
   verificarJugador(Argv),
   halt.
@@ -13,17 +12,19 @@ borro_elem_lista(Y, [Y|Xs], Zs):-
 borro_elem_lista(X, [Y|Xs], [Y|Zs]):-
   borro_elem_lista(X, Xs, Zs).
 
-
+/*Parseo la cadena de entrada en 3 subcadenas separadas por espacio*/
 parsearArgs(Resto,X,Y,Z):-
   nth0(0,Resto,X),
   nth0(1,Resto,Y),
   nth0(2,Resto,Z).
+/*Convierte una cadena en una lista de sus valores ASCII*/
 pasarAASCII([],[]).
 pasarAASCII([CCadena|RCadena],[CCadenaListada|L]):-
   string_to_list(CCadena,CCadenaListada),
   pasarAASCII(RCadena,L).
-
+/*Verifica si la secuencia de ASCII hacen referencia a un diez*/
 esUnDiez(49,48,10).
+/*caso recursivo de generar cartas*/
 generarCartasAux([],[]).
 generarCartasAux([N,P|Resto],[c(Numero,Palo)|RestoCartas]):-
   obtengoChar(N,Numero),
@@ -33,8 +34,7 @@ generarCartasAux([N1,N2,P|Resto],[c(10,Palo)|RestoCartas]):-
   esUnDiez(N1,N2,10),
   obtengoChar(P,Palo),
   generarCartasAux(Resto,RestoCartas).
-/*ARREGLAR EN GENERAR CARTAS:
-SI MANDO MULTIPLES CARTAS Y UNA ES UN 10 PINCHA.*/
+/*dada una cadena genero las cartas que representa*/
 generarCartas([],[]).
 generarCartas([CArg],[CCartas]):-
   string_to_card(CArg,CCartas).
@@ -42,30 +42,45 @@ generarCartas([CCadenaEntrada],ListaCartas):-
   string_to_list(CCadenaEntrada,ListaASCII),
   borro_elem_lista(44,ListaASCII,ListaSinComas),
   generarCartasAux(ListaSinComas,ListaCartas).
-/*formarListas recibe una serie de argumentos y te devuelve la mano del jugador, del crupier y las cartas vistas en mesa*/
+/*formarListas recibe una serie de argumentos y te devuelve la mano del jugador,
+ del crupier y las cartas vistas en mesa*/
 formarListas(Argumentos,ManoJugador,ManoCrupier,CartasVistas):-
   parsearArgs(Argumentos,MJ,MC,CV),
   generarCartas([MJ],ManoJugador),
   generarCartas([MC],ManoCrupier),
   generarCartas([CV],CartasVistas).
+
+/*Elije si es soft o hard el crupier*/
+elejirModoJuego(hard|Resto):-
+  formarListas(Resto,_,MC,_),
+  mostrarDesicionCrupierHard(MC).
+elejirModoJuego(soft|Resto):-
+  formarListas(Resto,_,MC,_),
+  mostrarDesicionCrupierSoft(MC).
+
 /*verificarJugador verifica si el comando pedido es del crupier o del jugador, luego corre la regla correspondiente*/
-verificarJugador([crupier | Resto]):-
+verificarJugador([crupier, soft | Resto]):-
+  formarListas(Resto,_,MC,_),
+  mostrarDesicionCrupierSoft(MC).
+
+verificarJugador([crupier, hard | Resto]):-
+  formarListas(Resto,_,MC,_),
+  mostrarDesicionCrupierHard(MC).
+/*
+  elejirModoJuego(Resto).
+*/
+  /*
   formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
-  format('Mano Crupier: ~w\n',ManoCrupier),
-  format('Otras cartas\n~w\n',ManoJugador),
-  format('~w\n',CartasVistas),
   playCrupier(ManoCrupier).
+*/
 verificarJugador([jugador | Resto]):-
-  format('llame a formar listas\n'),
   formarListas(Resto,ManoJugador,ManoCrupier,CartasVistas),
-  format('Listas formadas: \n'),
-  format('Mano Jugador: ~w\n',ManoJugador),
-  format('Mano Crupier: ~w\n',ManoCrupier),
-  format('Cartas Vistas: ~w\n',CartasVistas),
   playJugador(ManoJugador,ManoCrupier,CartasVistas).
 /*Regla que llama a la toma de desicion del crupier*/
+/*
 playCrupier(ManoCrupier):-
   mostrarDesicionCrupier(ManoCrupier).
+*/
 playJugador(ManoJugador,ManoCrupier,CartasVistas):-
   mostrarDesicionJugador(ManoJugador,ManoCrupier,CartasVistas).
   /*Convierte una cadena en número si es que la cadena contiene un nro */
@@ -94,8 +109,8 @@ obtengoChar(54,'6').
 obtengoChar(55,'7').
 obtengoChar(56,'8').
 obtengoChar(57,'9').
-/*Con haber definido solo los valores de los palos y los valores validos teniendo en cuenta letras y numeros
- alcanzaba suponiendo que no ingresen un dato invalido.*/
+/*Con haber definido solo los valores de los palos y los valores validos teniendo en
+cuenta letras y numeros alcanzaba suponiendo que no ingresen un dato invalido.*/
 obtengoChar(97,'a').
 obtengoChar(98,'b').
 obtengoChar(99,'c').
@@ -136,8 +151,8 @@ valorCarta(10,10).
 valorCarta(j,10).
 valorCarta(q,10).
 valorCarta(k,10).
-valorCarta(a,1).
 valorCarta(a,11).
+valorCarta(a,1).
 
 
 valorCaracter('2',2).
@@ -165,7 +180,8 @@ suma([], 0).
 suma([N| Resto], Suma):-
     suma(Resto, SumaAux),
     Suma is N + SumaAux.
-/*enlistar(Elemento,Lista del elemento) sirve para luego hacer la concatenacion y la suma(ARREGLARLO MEJOR SI SE PUEDE).*/
+/*enlistar(Elemento,Lista del elemento) sirve para luego hacer la
+ concatenacion y la suma(ARREGLARLO MEJOR SI SE PUEDE).*/
 enlistar(VC,[VC]).
 /*concatenar(elemento,lista,lista con el elemento)*/
 concatenar([E], L, [E|L]):-!.
@@ -185,10 +201,6 @@ hand([CHand|Resto],TotalMano):-
 twentyone(Hand):-
   hand(Hand,X),
   21 is X.
-/*Verdadero si la mano se pasa de 21.*/
-over(Hand):-
-  hand(Hand,X),
-  21 < X.
 /*Da la longitud de una lista*/
 longitud([], 0).
 longitud([_|Resto], L):- longitud(Resto, LResto), L is LResto + 1.
@@ -200,12 +212,12 @@ blackjack(Hand):-
   writef('ATR rrope, la rompí, tengo BLACKJACK\n').
 /*mayora a 21, devuelve verdadero si te pasaste de 21*/
 mayorA21(Hand):-
-  hand(Hand,X),
-  21 < X,!.
-    /*menorA17(Lista de cartas)devuelve verdadero si la mano es menor a 17*/
+  hand(Hand,X),!,
+  21 < X.
+    /*menorA17(Lista de cartas)devuelve verdadero si la mano es menor o igual a 17*/
 menorA17(Hand):-
   hand(Hand,X),
-  17 > X.
+  17 >= X.
 		/*mayora17(Lista de Cartas)devuelve verdadero si la mano es mayor a 17*/
 mayorA17(Hand):-
   hand(Hand,X),
@@ -217,19 +229,29 @@ mayorA18(Hand):-
 /*SECCION DEL CRUPIER*/
 /*soft_dealer(Lista de cartas) se queda si la mano es mayor a 17.*/
 soft_dealer(Hand):-
-  menorA17(Hand).
-/*hard_dealer(Lista de cartas) sigue pidiendo cartas si la mano es mayor o igual a 17*/
+  hand(Hand,X),!,
+  X=<17 .
+/*hard_dealer(Lista de cartas) sigue pidiendo cartas si la mano no es mayor a 17*/
 hard_dealer(Hand):-
-  mayorA17(Hand).
+  hand(Hand,X),!,
+  X=<18.
 /*pedirOtraCrupier(Mano del crupier)
 define si el crupier pide otra carta o se queda con lo que tiene*/
+/*
 pedirOtraCrupier(Hand):-
   hard_dealer(Hand).
+*/
 /*regla para correr al crupier*/
-mostrarDesicionCrupier(Hand):-
-  pedirOtraCrupier(Hand),!,
+mostrarDesicionCrupierHard(Hand):-
+  not(hard_dealer(Hand)),!,
   writef('Me planto soy el CRUPIER\n').
-mostrarDesicionCrupier(_):- writef('Pido otra carta soy el CRUPIER\n').
+mostrarDesicionCrupierHard(_):- writef('Pido otra carta soy el CRUPIER\n').
+mostrarDesicionCrupierSoft(Hand):-
+  not(soft_dealer(Hand)),!,
+  writef('Me planto soy el CRUPIER\n').
+mostrarDesicionCrupierSoft(_):- writef('Pido otra carta soy el CRUPIER\n').
+
+
 /*SECCION DEL JUGADOR*/
 /*agregoACards(Lista de la mano, Lista de cartas que salieron)*/
 agregoACards([],Cards,Cards).
@@ -285,7 +307,7 @@ pedirOtraJugador(Hand,Crupier,Cards):-
 	longitud(ValoresEnMazo,CantidadCartasEnMazo),
 	contar(Faltante,ValoresEnMazo,CantCartaQueNecesito),
 	probabilidad(CantCartaQueNecesito,CantidadCartasEnMazo,Probabilidad),
-  Probabilidad > 0.4 .
+  Probabilidad > 0.8 .
 /*muestra la desicion tomada por el jugador(seguir pidiendo o plantarse)*/
 mostrarDesicionJugador(Hand,Crupier, Cards):-
 	pedirOtraJugador(Hand,Crupier,Cards), !,
